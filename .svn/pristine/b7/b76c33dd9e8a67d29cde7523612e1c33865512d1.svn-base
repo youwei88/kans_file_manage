@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="dao.IMaterielDao">  
+
+    <select id="getMateriels" parameterType="String" resultType="pojo.Materiel">
+        select * from MATERIEL where 1=1
+        <if test ="code != null and code != ''">
+	       		AND code like CONCAT('%', #{code}, '%')
+	       	</if>
+	       	<if test ="dscp != null and dscp != ''">
+	       		AND dscp like CONCAT('%', #{dscp}, '%')
+	       	</if>
+    </select>
+    
+    <insert id="synchronizeMateriels" parameterType="pojo.Materiel">
+        insert into MATERIEL values (#{m.code},#{m.type}, #{m.dscp}, #{m.grp}, #{m.grpdesc}, #{m.mark}, #{m.isUserCreated,jdbcType=VARCHAR})
+    </insert>
+    
+    <delete id="delMateriels">
+    	delete from MATERIEL where ISUSERCREATED is null
+    </delete>
+    
+    <delete id="delMaterielById" parameterType="String">
+    	delete from MATERIEL where code = #{code} and ISUSERCREATED = '1'
+    </delete>
+    
+    <delete id="delMaterielSync" parameterType="String">
+    	delete from MATERIEL where code = #{code}
+    </delete>
+    
+    <select id="selectDescBycode" parameterType="String" resultType="String">
+    	select DSCP from MATERIEL where CODE = #{code}
+    </select>
+    
+    <select id="findSonDir" parameterType="String" resultType="pojo.Operation">
+    	select * from USER_OPERATION where 1=1
+    	<if test ="parId != 0">
+	       		AND PARENTNAME = #{parId}
+	       	</if>
+	       	<if test ="title != null and title != ''">
+	       		AND PARENTNAME = (select id from USER_OPERATION where TITLE = #{title} and parentName = 12)
+	       	</if>
+    </select>
+    
+    <select id="findFirDir" parameterType="String" resultType="Integer">
+    	select id from USER_OPERATION where title = #{code}
+    </select>
+    
+</mapper>  

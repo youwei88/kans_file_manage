@@ -1,0 +1,152 @@
+package controller.api;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+import pojo.FileInfoBack;
+import pojo.FilePath;
+import pojo.OAFile;
+import service.file.IFileBackService;
+import service.file.IFilePathService;
+
+@Controller
+@RequestMapping({ "/api" })
+public class TransOAFileController {
+
+	
+	@Autowired
+	private IFilePathService filePathService;
+	
+	@Autowired
+	private IFileBackService fileBackService;
+
+
+	// 文件根目录
+	@Value("#{config.RootFilePath}")
+	private String RootFilePath;
+	
+	//@RequestBody List<OAFileInfo> fileInfos
+	/**
+	 * 获取OA流程对应上传目录
+	 * 
+	 * @param request
+	 * @param response
+	 */
+	@RequestMapping(value = { "/transferOAFile" })
+	@ResponseBody
+	public Map<String, Object> transferOAFile(@RequestBody List<FileInfoBack> fileInfos) {
+		
+		Map<String, Object> m = new HashMap<String, Object>();
+		
+		try {
+			
+			
+/*			List<String> tempList = new ArrayList<String>();
+			String abcStr = "[{\"code\":\"60000001\",\"fileName\":\"test223.excel\",\"oaId\":\"001\",\"type\":\"1\",\"requestId\":\"111\"},{\"code\":\"60000002\",\"fileName\":\"test323.excel\",\"oaId\":\"002\",\"type\":\"2\",\"requestId\":\"111\"},{\"code\":\"60000002\",\"fileName\":\"test323.excel\",\"oaId\":\"003\",\"type\":\"2\",\"requestId\":\"111\"}]";
+			JSONArray json = JSONArray.fromObject(abcStr); 
+			
+			List<String> fileIds = new ArrayList<String>();		
+			if(json.size()>0){
+				  for(int i=0;i<json.size();i++){
+				    JSONObject job = json.getJSONObject(i);  // 遍历 jsonarray 数组，把每一个对象转成 json 对象
+				    System.out.println("code="+ job.get("code")+",fileName="+job.get("fileName")+",oaId="+job.get("oaId")+",type="+job.get("type")+",requestId="+job.get("requestId")) ;  // 得到 每个对象中的属性值
+				    tempList.add((String)job.get("type"));
+				    fileIds.add(job.getString("oaId"));
+				  }
+			}*/
+			
+			
+			
+			List<String> tempList = new ArrayList<String>();
+			List<String> fileIds = new ArrayList<String>();	
+			if(fileInfos!=null && fileInfos.size()>0) {
+			  for(int i=0;i<fileInfos.size();i++){
+				    FileInfoBack fileInfo = fileInfos.get(i);
+				    System.out.println("code="+ fileInfo.getCode()+",fileName="+fileInfo.getFileName()+",oaId="+fileInfo.getOaId()+",type="+fileInfo.getType()+",requestId="+fileInfo.getRequestId()) ;  // 得到 每个对象中的属性值
+				    tempList.add(fileInfo.getType());
+				    fileIds.add(fileInfo.getOaId());
+				  }
+			}else {
+				m.put("list", "");
+				m.put("msg", "入参格式不正确");
+				m.put("status", "2");
+				return m;
+			}
+			//for (int j = 0; j < json.size(); j++) {
+			//JSONObject job = json.getJSONObject(j);
+			if(fileIds!=null && fileIds.size()>0) {				
+				fileBackService.deleteRecord(fileIds);
+			}
+			
+
+			List<FilePath> filePaths = filePathService.getFilePath(tempList);
+			
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+			List<FileInfoBack> fileBackList = new ArrayList<FileInfoBack>();
+			
+			List<OAFile> OAFileList = new ArrayList<OAFile>();
+			
+			if(filePaths!=null&&filePaths.size()>0) {
+				for (int i = 0;i< filePaths.size();i++) {
+					
+					FilePath filePath = filePaths.get(i);
+					for (int j = 0; j < fileInfos.size(); j++) {
+						FileInfoBack fileInfo = fileInfos.get(j);
+						if(fileInfo.getType().equals(filePath.getType())) {
+							FileInfoBack fileInfoBack = new FileInfoBack();
+							fileInfoBack.setCode(fileInfo.getCode());
+							fileInfoBack.setOaId(fileInfo.getOaId());
+							fileInfoBack.setRequestId(fileInfo.getRequestId());
+							fileInfoBack.setType(fileInfo.getType());
+							fileInfoBack.setAuthor("OA");
+							fileInfoBack.setChannelId("1");
+							fileInfoBack.setFileName(fileInfo.getFileName());
+							fileInfoBack.setPath("/"+fileInfo.getCode()+filePath.getPath());
+							fileInfoBack.setUploadTime(sdf.format(new Date()));
+							fileInfoBack.setFileSize("0");
+							fileInfoBack.setIsDeleted("0");
+							fileBackList.add(fileInfoBack);
+							OAFile oAFile = new OAFile();
+							oAFile.setOaId(fileInfo.getOaId());
+							oAFile.setPath(RootFilePath+"/"+fileInfo.getCode()+filePath.getPath());
+							OAFileList.add(oAFile);
+						}
+					}
+					
+
+				}
+			}
+			
+			
+			for (FileInfoBack fileBack : fileBackList) {
+				fileBackService.saveFileBack(fileBack);
+			}
+
+			m.put("list", OAFileList);
+			m.put("msg", "查询数据成功");
+			m.put("status", "1");
+		} catch (Exception e) {
+			m.put("list", "");
+			m.put("msg", "查询数据失败");
+			m.put("status", "0");
+			e.printStackTrace();
+			
+		}
+
+		return m;
+	}
+
+}

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="dao.IFileDao">  
+
+    <insert id="saveFileInfo" parameterType="pojo.FileInfo">
+        insert into FILEINFO (fileName,path,uploadTime,fileSize,author,isDeleted,channelId,oaId,type,requestId) values (#{fileName}, #{path}, #{uploadTime}, #{fileSize}, #{author},#{isDeleted},#{channelId},#{oaId},#{type},#{requestId})
+    </insert>
+    
+    <select id="getFileInfo" resultType="pojo.FileInfo">
+        select * from FILEINFO where filename = #{fileName} and path = #{path} order by uploadtime desc limit 1
+    </select>
+    
+    
+   <select id="getFileInfoById" resultType="pojo.FileInfo">
+        select * from FILEINFO where requestId = #{requestId} and oaId = #{oaId} and type = #{type}
+    </select>
+    
+    <select id="getFileById" resultType="pojo.FileInfo">
+        select * from FILEINFO where id = #{id}
+    </select>
+    
+    <delete id="delFileInfo" parameterType="java.lang.Integer">
+        delete from FILEINFO where id = #{id}
+    </delete>
+    
+    <delete id="deleteRecord" parameterType="java.lang.String">  
+        DELETE FROM FILEINFO where oaId in  
+        <foreach item="item" index="index" collection="fileIds" open="(" separator="," close=")">  
+        #{item}  
+        </foreach>  
+    </delete>
+    
+    <select id="updateFileInfo" parameterType="pojo.FileInfo">
+        update FILEINFO set UPLOADTIME = #{uploadTime}, FILESIZE = #{fileSize}, AUTHOR= #{author},isDeleted= #{isDeleted} where FILENAME = #{fileName} and PATH = #{path}
+    </select>
+    
+   <delete id="deleteFileInfo" parameterType="pojo.FileInfo">  
+        DELETE FROM FILEINFO where PATH = #{path} and FILENAME = #{fileName}   
+    </delete>
+    
+    <insert id="addDir" parameterType="pojo.Operation">
+        insert into USER_OPERATION (title,operName,type,parentName,orderNum,flagName,status,isFromSap,optionStatus) values (#{op.title}, #{op.operName,jdbcType=VARCHAR}, 
+        (select a.type from (select type+1 as type from USER_OPERATION where id=#{op.parentName}) a), #{op.parentName}, #{op.orderNum}, #{op.flagName,jdbcType=VARCHAR}, #{op.status}, #{op.isFromSap}, #{op.optionStatus})
+    </insert>
+    
+    <update id="delFileMark" parameterType="java.lang.Integer">
+        update FILEINFO set ISDELETED=1 where id = #{id}
+    </update>
+    
+    <select id="getOperNext" resultType="java.lang.Integer">
+    	SELECT Auto_increment FROM information_schema.`TABLES` WHERE table_name = 'USER_OPERATION'
+    </select>
+    
+    <select id="getIdByOperName" parameterType="String" resultType="java.lang.Integer">
+    	SELECT id FROM USER_OPERATION WHERE OPERNAME = #{operName}
+    </select>
+    
+    <select id="getOption" resultType="pojo.Operation">
+    	select title,operName from USER_OPERATION where optionStatus = 1
+    </select>
+    
+    
+    <select id="getInfoBycode" resultType="pojo.Operation">
+    	select id from USER_OPERATION where code = #{code}
+    </select>
+   
+    
+  
+</mapper>  

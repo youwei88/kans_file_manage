@@ -1,0 +1,52 @@
+package service.file;
+
+import pojo.FileInfo;
+import pojo.Operation;
+
+public interface IFileService {
+
+	/**
+	 * 存储文件信息
+	 */
+	public void saveFileInfo(FileInfo file);
+
+	/**
+	 * 根据名字获取文件信息
+	 */
+	public FileInfo getFileInfo(String fileName, String path);
+
+	/**
+	 * 删除文件信息
+	 */
+	public void delFileInfo(int id);
+
+	/**
+	 * 更新文件信息
+	 */
+	public void updateFileInfo(FileInfo file);
+
+	/**
+	 * 添加目录
+	 */
+	public void addDir(Operation op);
+
+	/**
+	 * 应用到目录
+	 */
+	public void applyDir(String path);
+	
+	/**
+	 * 逻辑删除
+	 */
+	public void delFileMark(int id);
+	
+	/**
+	 * 获得user_operation表的下一个主键值
+	 */
+	public int getOperNext();
+
+	/**
+	 * 根据operName获得主键id
+	 */
+	public Integer getIdByOperName(String operName);
+}

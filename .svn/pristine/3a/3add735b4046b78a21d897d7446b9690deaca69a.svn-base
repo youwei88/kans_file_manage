@@ -1,0 +1,28 @@
+package dao;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
+import pojo.Materiel;
+import pojo.Operation;
+
+public interface IMaterielDao {
+
+	public List<Materiel> getMateriels(@Param("code") String code, @Param("dscp") String dscp);
+
+	public void synchronizeMateriels(@Param("m") Materiel m);
+
+	public void delMateriels();
+
+	public void delMaterielById(String code);
+	
+	public String selectDescBycode(String code);
+
+	// 物理删除
+	public void delMaterielSync(String code);
+
+	public List<Operation> findSonDir(@Param("parId") int parId, @Param("title") String title);
+
+	public int findFirDir(String code);
+}

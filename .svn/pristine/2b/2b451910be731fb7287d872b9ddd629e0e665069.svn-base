@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="dao.IFileBackDao">  
+
+    <update id="saveFileBack" parameterType="pojo.FileInfoBack">
+<!--         replace into FILEINFOBACK (filename,path,uploadtime,filesize,author,isdeleted,oaId,type,requestId,channelId) values (#{fileName}, #{path}, #{uploadTime}, #{fileSize}, #{author},#{isDeleted},#{oaId}, #{type},#{requestId},#{channelId})
+ -->        replace into FILEINFOBACK set filename = #{fileName},
+ 										  path=#{path},
+ 										  uploadtime=#{uploadTime},
+ 										  filesize=#{fileSize},
+ 										  author=#{author},
+ 										  isdeleted=#{isDeleted},
+ 						 				  oaId=#{oaId},
+ 					 					  type=#{type},
+ 					 					  requestId=#{requestId},
+ 					 					  channelId=#{channelId}
+        
+<!--         MERGE INTO FILEINFOBACK T1
+			USING (SELECT #{filename} AS filename,#{path} AS path,#{uploadtime} AS uploadtime,#{filesize} AS filesize,#{author} AS author,#{isdeleted} AS isdeleted,#{oaId} AS oaId,#{type} AS type,#{requestId} AS requestId,#{channelId} AS channelId) T2
+		ON ( T1.oaId=T2.oaId and T1.requestId=T2.requestId and T1.type=T2.type)	
+		WHEN MATCHED THEN
+    	UPDATE SET T1.filename = T2.filename,
+			   T1.path = T2.path,
+			   T1.uploadtime = T2.uploadtime,
+			   T1.filesize = T2.filesize,
+			   T1.author = T2.author,
+			   T1.isdeleted = T2.isdeleted,
+		WHEN NOT MATCHED THEN 
+    		INSERT (filename,path,uploadtime,filesize,author,isdeleted,oaId,type,requestId,channelId) VALUES(T2.filename,T2.path,T2.uploadtime,T2.filesize,T2.author,T2.isdeleted,T2.oaId,T2.type,T2.requestId,T2.channelId); -->
+    </update>
+
+	<delete id="deleteRecord" parameterType="java.lang.String">  
+        DELETE FROM FILEINFOBACK where oaId in  
+        <foreach item="item" index="index" collection="fileIds" open="(" separator="," close=")">  
+        #{item}  
+        </foreach>  
+    </delete>
+  
+</mapper>  

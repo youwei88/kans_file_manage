@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="dao.IFilePathDao">  
+
+<!--      <resultMap id="BaseResultMap" type="pojo.FilePath">
+           property是实体类属性，column是表列名
+         <id property="id" column="id" jdbcType="INTEGER" />
+         <result property="code" column="code"  jdbcType="VARCHAR" />
+         <result property="path" column="path" jdbcType="VARCHAR" />
+         <result property="description" column="description" jdbcType="VARCHAR" />
+     </resultMap> -->
+    
+    <select id="getFilePath" resultType="pojo.FilePath">  
+		 select  
+		 *
+		 	from FILEPATH where type in  
+		 <foreach item="item" index="index" collection="types" open="(" separator="," close=")">  
+		  	#{item}  
+		 </foreach>  
+	</select>  
+	
+	
+	<select id="getList" resultType="pojo.FilePath">
+		select id,type,path,description from FILEPATH 
+    </select>
+	
+	
+	<insert id="addFilePath" parameterType="pojo.FilePath">
+        insert into FILEPATH (type,path,description) values (#{type}, #{path}, #{description})
+    </insert>
+    
+	<update id="updateFilePath" parameterType="pojo.FilePath">
+    	update FILEPATH set 
+	       		type = #{type},
+	       		path = #{path},
+	       		description = #{description}
+	       	where id = #{id}
+    </update>
+    
+    <delete id="delFilePath" parameterType="java.lang.Integer">
+        delete from FILEPATH where id = #{id}
+    </delete>
+	
+  
+</mapper>  

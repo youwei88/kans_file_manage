@@ -1,0 +1,56 @@
+#log4j.rootLogger=INFO,R,CONSOLE
+#
+#log4j.appender.CONSOLE=org.apache.log4j.ConsoleAppender  
+#log4j.appender.CONSOLE.layout=org.apache.log4j.PatternLayout  
+#log4j.appender.CONSOLE.layout.ConversionPattern=%d [%t] %-5p %c(%L) - %m%n  
+#  
+##
+##log4j.appender.R=org.apache.log4j.RollingFileAppender
+##log4j.appender.R.file=${catalina.home}/logs/r.log
+##log4j.appender.R.layout=org.apache.log4j.PatternLayout
+##log4j.appender.R.layout.conversionPattern=%d [%t] %-5p %c(%L) - %m%n
+##log4j.appender.R.MaxFileSize=1000KB
+##log4j.appender.R.MaxBackupIndex=10
+#
+##info
+#log4j.appender.R = org.apache.log4j.DailyRollingFileAppender
+#log4j.appender.R.File = ${catalina.home}/logs/info.log
+#log4j.appender.R.Append = true
+#log4j.appender.R.Threshold = INFO
+#log4j.appender.R.layout = org.apache.log4j.PatternLayout
+#log4j.appender.R.layout.ConversionPattern = %d{yyyy.MM.dd HH:mm:ss} %c{1}:%L - %m%n
+#
+##error
+#log4j.appender.R = org.apache.log4j.DailyRollingFileAppender
+#log4j.appender.R.File = ${catalina.home}/logs/error.log
+#log4j.appender.R.Append = true
+#log4j.appender.R.Threshold = ERROR
+#log4j.appender.R.layout = org.apache.log4j.PatternLayout
+#log4j.appender.R.layout.ConversionPattern = %d{yyyy.MM.dd HH:mm:ss} %c{1}:%L - %m%n
+
+
+### set log levels ###
+log4j.rootLogger = INFO , stdout ,D,E
+
+### \u8F93\u51FA\u5230\u63A7\u5236\u53F0 ###
+log4j.appender.stdout = org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.Target = System.out
+log4j.appender.stdout.layout = org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern =  %d{ABSOLUTE} %5p %c{1}:%L - %m%n
+
+### \u8F93\u51FA\u5230\u65E5\u5FD7\u6587\u4EF6 ###
+log4j.appender.D = org.apache.log4j.DailyRollingFileAppender
+log4j.appender.D.File = ${catalina.home}/logs/info.log
+log4j.appender.D.Append = true
+log4j.appender.D.Threshold = INFO
+log4j.appender.D.layout = org.apache.log4j.PatternLayout
+log4j.appender.D.layout.ConversionPattern = %-d{yyyy-MM-dd HH:mm:ss}  [ %t:%r ] - [ %p ]  %m%n
+
+### \u4FDD\u5B58\u5F02\u5E38\u4FE1\u606F\u5230\u5355\u72EC\u6587\u4EF6 ###
+log4j.appender.E = org.apache.log4j.DailyRollingFileAppender
+log4j.appender.E.File = ${catalina.home}/logs/error.log
+log4j.appender.E.Append = true
+log4j.appender.E.Threshold = ERROR
+log4j.appender.E.layout = org.apache.log4j.PatternLayout
+log4j.appender.E.layout.ConversionPattern = %-d{yyyy-MM-dd HH:mm:ss}  [ %t:%r ] - [ %p ]  %m%n 
+

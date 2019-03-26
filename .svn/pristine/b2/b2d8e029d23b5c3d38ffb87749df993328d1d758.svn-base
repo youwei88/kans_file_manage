@@ -1,0 +1,14 @@
+# sap连接信息
+#jco.client.client = 400
+#jco.client.user = TYRFC
+#jco.client.passwd = kans123
+#jco.client.lang = ZH
+#jco.client.ashost = 172.18.172.40
+#jco.client.sysnr = 00
+
+jco.client.client = 800
+jco.client.user = imp
+jco.client.passwd = imp123456
+jco.client.lang = ZH
+jco.client.ashost = 172.18.172.47
+jco.client.sysnr = 00

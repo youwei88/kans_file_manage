@@ -1,0 +1,8 @@
+RootFilePath = /home/kans/files
+
+# sap接口名称
+MATERIAL_API_NAME = ZRFC_DOC_001
+
+# 允许的文件格式
+FILETYPES = jpg,jpeg,xls,xlsx,doc,docx,pdf,ppt,pptx,txt,tif,bmp,caj,xml,png
+

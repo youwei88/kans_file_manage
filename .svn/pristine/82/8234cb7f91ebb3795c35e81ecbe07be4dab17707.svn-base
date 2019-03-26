@@ -1,0 +1,261 @@
+
+$(function(){
+})
+
+//关闭窗口
+function closeWindow(divId) {
+	$("#"+divId).window('close');
+}
+
+//关闭窗口
+function dialogClose(divId){
+	$("#"+divId).dialog('close');
+	$('#dg').datagrid('reload');
+}
+
+// 查询
+function doSearch(){
+	$('#dg').datagrid('load',{
+		userName: $('#userName').val(),
+		productid: $('#productid').val()
+	});
+}
+
+// 菜单查询
+function doOperSearch(){
+	$('#dg').datagrid('load',{
+		type: $('#type').val(),
+		productid: $('#productid').val()
+	});
+}
+
+//提交窗口
+function submitButton(divId,roleForm){
+	
+	$(document).ready(function() {
+    $.ajax({  
+        url:$("#"+roleForm).attr('action'),
+        type:$("#"+roleForm).attr('method'),
+        data:$("#"+roleForm).serialize(),  
+        dataType:"json",
+        success:function(){
+//        	if(data == 1){
+    		$.messager.alert('通知','提交成功!');
+    		$("#"+divId).dialog('close');
+//        		alert(data);
+//        	}else{
+//        		$.messager.alert('通知','提交失败1!');
+//        		alert(data);
+//        	}
+        },
+        error:function(){
+        	
+        	$.messager.alert('通知','提交失败2!');
+        	$("#"+divId).dialog('close');
+//        	$.messager.confirm('Confirm','Are you sure you want to delete record?',function(r){
+//        	    if (r){
+//        			alert('ok');
+//        	    }
+//        	});
+        	
+        }
+      });
+	});
+	
+	$("#"+divId).dialog('close');
+	$('#dg').datagrid('reload');
+	
+}
+
+//准备窗口调用
+function dialogWindow(divId,url,title,icon,f){
+	
+	//准备
+	$("#"+divId).dialog({
+        title: title,
+        href: url,
+        width:'600',
+	    height:'400',
+        iconCls: icon,
+        modal: true,
+        closed: true,
+        resizable:true
+        
+        /*toolbar : [ {
+            text : '提交',  
+            iconCls : 'icon-ok',  
+            handler : function() {
+            	
+            	var form = $("#dialogForm");
+                $.ajax({  
+                    url:form.attr('action'),  
+                    type:form.attr('method'),
+                    data:form.serialize(),  
+                    dataType:"json",  
+                    success:function(data){  
+                        $("#dialog").dialog("close");  
+                        alert("成功啦");  
+                    },  
+                    error:function(){  
+                        $("#dialog").dialog("close");  
+                        alert("出错了哦");  
+                    }
+                  });
+            	
+            	
+            	
+                $("#"+divId).dialog('close');
+                f.datagrid('reload');
+            }  
+        }, '-', {
+            text : '关闭',  
+            iconCls : 'icon-no',  
+            handler : function() {  
+            	$("#"+divId).dialog('close');
+            }  
+        } ]*/
+    });
+	
+	//打开窗口
+	$("#"+divId).dialog("open");
+	
+}
+
+function getSelections(){
+	var ids = [];
+	var rows = $('#tb').datagrid('getSelections');
+}
+
+function deletedata(url) {  
+    //返回选中多行  
+    var selRow = $('#dg').datagrid('getSelections');
+    //判断是否选中行  
+    if (selRow.length==0) {  
+        $.messager.alert("提示", "请选择要删除的数据！", "info");  
+        return;  
+    }else{      
+        var temID="";  
+        //批量获取选中行的评估模板ID  
+        for (i = 0; i < selRow.length;i++) {  
+            if (temID =="") {  
+                temID = selRow[i].id;  
+            } else {  
+                temID = selRow[i].id + "," + temID;  
+            }                 
+        }  
+                    
+        $.messager.confirm('提示', '是否删除选中数据?', function (r) {  
+
+            if (!r) {  
+                return;  
+            }  
+            //提交  
+            $.ajax({  
+                type: "POST",  
+                async: false,  
+                url: url + "?idStr=" + temID,
+                data: temID,  
+                success: function () {  
+                        $('#dg').datagrid('clearSelections');  
+                        $.messager.alert("提示", "恭喜您，数据删除成功！", "info");  
+                        $('#dg').datagrid('reload');  
+                },
+                error:function(data){
+                	$.messager.alert('通知',data);
+                }
+            });  
+        });  
+
+    }  
+};  
+
+//显示弹出添加的对话框  
+function showAddFrm() {
+	$("#addDiv").css("display", "block");
+	$("#addDiv").dialog({
+//		href: url,
+		width: 300,
+		height: 400,
+		modal: true,
+		title: "添加用户信息",
+		collapsible: true,
+		minimizable: true,
+		maximizable: true,
+		resizable: true,
+		buttons: [{
+			id: 'btnAdd',
+			text: '添加',
+			iconCls: 'icon-add',
+			handler: function() {
+				//让表单提交  
+				$("#addDiv").submit();
+			}
+		}]
+	});
+}
+
+//从数据库获取角色的选项值,然后打开addDiv
+function prepareOptions(url) {
+		$.ajax({  
+	        url:url + "/user/getRoleOptions",
+	        type:"GET",
+	        success:function(data){
+//	    		$("#role").append(data);
+	    		document.getElementById("role").innerHTML=data;
+	    		$('#addDiv').dialog('open');
+	        },
+	        error:function(data){
+	        	$.messager.alert('通知','请求失败!');
+	        }
+	      });
+}
+
+/*function confirm(){
+    
+    var message={
+                   "userName":$("#userName").val(),
+                   "password":$("#password").val(),
+                   "realName":$("#realName").val(),
+                   "status":$("#status").val(),
+                   "email":$("#email").val(),
+                   "telephone":$("#telephone").val(),
+                   "QQ":$("#QQ").val(),
+                   "role":$("#role").val(),
+               };
+        if($("#userName").val()!=""&&$("#password").val()!=""&&$("#realName").val()!=""&&$("#status").val()!=""&&$("#email").val()!=""&&$("#telephone").val()!=""&&$("#QQ").val()!=""&&$("#role").val()!="")
+         {
+             $.ajax({
+                 type:"post",
+                 url:"<%=base%>/user/adduser",
+                 data:{"Message":JSON.stringify(message)},
+                 success:function(){
+                    $('#dg1').datagrid('reload');
+                    alert("添加成功！");
+                    $("#userName").val("");
+                    $("#password").val("");
+                    $("#realName").val("");
+                    $("#status").val("");
+                    $("#email").val("");
+                    $("#telephone").val("");
+                    $("#QQ").val("");
+                    $("#role").val("");
+                 }
+               })  
+               
+           } 
+           else{alert("请填写完整！");
+                   $("#userName").val("");
+                   $("#password").val("");
+                   $("#realName").val("");
+                   $("#status").val("");
+                   $("#email").val("");
+                   $("#telephone").val("");
+                   $("#QQ").val("");
+                   $("#role").val("");
+               }             
+           
+  }
+*/
+	
+
+	

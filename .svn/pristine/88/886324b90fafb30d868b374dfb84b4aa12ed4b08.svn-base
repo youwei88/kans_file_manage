@@ -1,0 +1,102 @@
+package service.user.impl;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import dao.IRoleDao;
+import pojo.Operation;
+import pojo.Role;
+import service.user.IRoleService;
+
+@Service
+public class RoleServiceImpl implements IRoleService {
+
+	@Autowired
+	private IRoleDao roleDao;
+
+	@Override
+	public void addRole(Role role) {
+
+		roleDao.addRole(role);
+
+	}
+	
+	@Override
+	public void updateRole(Role role) {
+
+		roleDao.updateRole(role);
+
+	}
+
+	@Override
+	public void delRole(int id) {
+
+		roleDao.delRole(id);
+
+	}
+
+	@Override
+	public List<Operation> getOperations(int id, int type) {
+		return roleDao.getOperations(id, type);
+	}
+	
+	
+
+	@Override
+	public List<Operation> getAllOperations() {
+		return roleDao.getAllOperations();
+	}
+
+	@Override
+	public void addOperation(Operation operation) {
+		roleDao.addOperation(operation);
+	}
+
+	@Override
+	public void delOperation(int id) {
+		roleDao.delOperation(id);
+	}
+
+	@Override
+	public void delRoleOperation(int roleid) {
+		roleDao.delRoleOperation(roleid);
+	}
+
+	@Override
+	public void addRoleOperation(int roleid, int operId) {
+		roleDao.addRoleOperation(roleid, operId);
+	}
+
+	@Override
+	public List<Operation> getAllDirs() {
+		return roleDao.getAllDirs();
+	}
+
+	@Override
+	public String getParentName(int id) {
+		return roleDao.getParentName(id);
+	}
+
+	@Override
+	public void updateOperation(Operation operation) {
+		roleDao.updateOperation(operation);
+	}
+
+	@Override
+	public void delRoleOperationByOperId(int id) {
+		roleDao.delRoleOperationByOperId(id);
+	}
+
+	@Override
+	public List<Operation> getOperationList(int id, int type, int isFromSap) {
+		return roleDao.getOperationList(id, type , isFromSap);
+	}
+
+	@Override
+	public List<Operation> getMaterialOperate(int userId, int menuId) {
+		return roleDao.getMaterialOperate(userId, menuId);
+	}
+
+}

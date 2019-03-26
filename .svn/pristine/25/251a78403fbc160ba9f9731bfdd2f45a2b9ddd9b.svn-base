@@ -1,0 +1,10 @@
+#RootFilePath = /home/kans/files
+
+RootFilePath =  D:\\var\\uploaded_files
+
+# sapæ¥å£åç§°
+MATERIAL_API_NAME = ZRFC_DOC_001
+
+# åè®¸çæä»¶æ ¼å¼
+FILETYPES = jpg,jpeg,xls,xlsx,doc,docx,pdf,ppt,pptx,txt,tif,bmp,caj,xml,png
+

@@ -1,0 +1,229 @@
+package service.materiel.impl;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.sap.conn.jco.JCoDestination;
+import com.sap.conn.jco.JCoException;
+import com.sap.conn.jco.JCoFunction;
+import com.sap.conn.jco.JCoParameterList;
+import com.sap.conn.jco.JCoRepository;
+import com.sap.conn.jco.JCoTable;
+
+import common.util.SapJco3Conn;
+import common.util.StringUtils;
+import dao.IMaterielDao;
+import pojo.Materiel;
+import pojo.Operation;
+import service.TaskJob;
+import service.materiel.IMaterielService;
+
+@Service
+public class MaterielServiceImpl implements IMaterielService {
+
+	protected static Logger logger = Logger.getLogger(MaterielServiceImpl.class);
+
+	@Autowired
+	IMaterielDao materielDao;
+
+	@Autowired
+	TaskJob taskJob;
+
+	/*
+	 * private static final String[] ss = { "研发文件", "质量文件", "采购文件", "安全性文件",
+	 * "市场及技术文件", "规格文件" };
+	 * 
+	 * // 成品 private static final String finishedMtr = "Z001"; // 包材 private
+	 * static final String packageMtr = "Z004"; // 原料 private static final
+	 * String rawMtr = "Z005"; // 料体 private static final String mtrBody =
+	 * "Z006";
+	 */
+
+	private static final String[] materiels = { "Z001", "Z004", "Z005", "Z006" };
+
+	private static final DateFormat dataDf = new SimpleDateFormat("yyyy-MM-dd");
+
+	private static final DateFormat nameDf = new SimpleDateFormat("yyyyMMdd");
+
+	// 文件根目录
+	@Value("#{config.RootFilePath}")
+	private String RootFilePath;
+
+	// 物料接口名称
+	@Value("#{config.MATERIAL_API_NAME}")
+	private String materielSap;
+
+	@Override
+	public List<Materiel> getMateriels(String code, String dscp) {
+		return materielDao.getMateriels(code, dscp);
+	}
+
+	@Override
+	public void synchronizeMateriels(String start, String end) {
+
+		Date startTime = null;
+		Date endTime = null;
+		if (StringUtils.isNotEmpty(start) && StringUtils.isNotEmpty(end)) {
+			try {
+				startTime = dataDf.parse(start);
+				endTime = dataDf.parse(end);
+			} catch (ParseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		boolean flag = true;
+
+		// SAP接口
+		JCoDestination dest;
+		try {
+			dest = SapJco3Conn.getDestination();
+
+			// 4种材料目录急
+			Map<String, List<String>> mtrDirs = new HashMap<String, List<String>>();
+
+			// 组装目录
+			getDirs(mtrDirs);
+
+			JCoRepository repository = dest.getRepository();
+			JCoFunction fm = repository.getFunction(materielSap);
+			if (fm == null) {
+				throw new RuntimeException("Function does not exists in SAP system.");
+			}
+
+			// 如果库中有数据则视为同步当天物料，无数据则全部同步
+			List<Materiel> ms = materielDao.getMateriels(null, null);
+
+			while (flag) {
+
+				if (ms.size() == 0) {
+					fm.getImportParameterList().setValue("I_ALLDATA", "X"); // 全部获取
+				} else {
+					fm.getImportParameterList().setValue("I_DATE", nameDf.format(startTime)); // 日渐获取
+				}
+
+				// 执行
+				fm.execute(dest);
+
+				/** 1、获取返回的结果 **/
+				JCoParameterList exportParam = fm.getExportParameterList();
+				String eType = exportParam.getString("E_TYPE");
+				String eMsg = exportParam.getString("E_MSG");
+				logger.info("返回结果：" + eType + " msg:" + eMsg);
+				/**
+				 * 2、获取以Table形式返回的结果
+				 */
+				JCoTable etTable = fm.getTableParameterList().getTable("ET_MARA");
+				for (int i = 0; i < etTable.getNumRows(); i++) {
+					etTable.setRow(i);
+					String mATNR = etTable.getString("MATNR").substring(etTable.getString("MATNR").length() - 8);
+					Materiel m = new Materiel();
+					m.setCode(mATNR);
+					m.setType(etTable.getString("MTART"));
+					m.setDscp(etTable.getString("MAKTX"));
+					m.setGrp(etTable.getString("MATKL"));
+					m.setGrpdesc(etTable.getString("WGBEZ"));
+					m.setMark(etTable.getString("LVORM"));
+
+					// 先删除再插入，即使不存在也不会报错，兼容更新
+					materielDao.delMaterielSync(mATNR);
+					materielDao.synchronizeMateriels(m);
+
+					logger.debug(mATNR + "," + etTable.getString("MTART") + "," + etTable.getString("MAKTX") + ","
+							+ etTable.getString("MATKL") + "," + etTable.getString("WGBEZ") + ","
+							+ etTable.getString("LVORM") + "," + i);
+					// 建目录
+					// 一级目录
+
+					new File(RootFilePath, mATNR).mkdirs();
+					List<String> dirs = mtrDirs.get("Z00" + mATNR.substring(0, 1));
+					if (null != dirs) {
+						for (String s : dirs) {
+							new File(RootFilePath + "/" + mATNR + "/" + s).mkdirs();
+						}
+					}
+				}
+
+				if (ms.size() == 0) {
+					flag = false;
+				} else {
+					startTime.setDate(startTime.getDate() + 1);
+					if (startTime.after(endTime)) {
+						flag = false;
+					}
+				}
+			}
+		} catch (JCoException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	// 获取每种类型对应的目录结构
+	private void getDirs(Map<String, List<String>> dirs) {
+		for (String s : materiels) {
+			List<String> ss = new ArrayList<String>();
+			// 找到一级目录的权限id
+			List<Operation> secDirs = materielDao.findSonDir(0, s);
+
+			for (Operation op : secDirs) { // 二级目录
+				logger.debug("secDirs:" + secDirs + ",optitle:" + op.getTitle());
+				ss.add("/" + op.getTitle());
+
+				List<Operation> thrDirs = materielDao.findSonDir(op.getId(), null);
+				for (Operation op2 : thrDirs) { // 三级目录
+					ss.add("/" + op.getTitle() + "/" + op2.getTitle());
+					logger.debug("thrDirs:" + thrDirs + ",op2title:" + op2.getTitle());
+				}
+			}
+			dirs.put(s, ss);
+		}
+	}
+
+	@Override
+	public void synchronizeMateriels(Materiel m) {
+		materielDao.synchronizeMateriels(m);
+	}
+
+	@Override
+	public void delMaterielById(String code) {
+		materielDao.delMaterielById(code);
+
+		// 删目录
+		try {
+			org.apache.commons.io.FileUtils.deleteDirectory(new File(RootFilePath, code));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void delMaterielSync(String code) {
+		materielDao.delMaterielSync(code);
+	}
+
+	@Override
+	public List<Operation> findSonDir(int id, String code) {
+		return materielDao.findSonDir(id, code);
+	}
+
+	@Override
+	public String selectDescBycode(String code) {
+		return materielDao.selectDescBycode(code);
+	}
+}

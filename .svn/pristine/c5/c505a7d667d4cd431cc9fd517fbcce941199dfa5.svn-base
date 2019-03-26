@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="dao.IRoleDao">  
+
+    <insert id="addRole" parameterType="pojo.Role">
+        insert into ROLE (roleName,status,mark) values (#{roleName}, #{status}, #{mark})
+    </insert>
+    
+    <delete id="delRole" parameterType="java.lang.Integer">
+        delete from ROLE where id = #{id}
+    </delete>
+    
+    <select id="getOperations" parameterType="java.lang.Integer" resultType="pojo.Operation">
+    	select uo.* from ROLE_OPER ro inner join USER_OPERATION uo on ro.operid=uo.id where ro.roleid=#{id}
+    	<if test ="type != 0">
+	       		AND type = #{type} 
+	       	</if>
+    </select>
+    
+    <select id="getAllOperations" resultType="pojo.Operation">
+    	select * from USER_OPERATION
+    </select>
+    
+    <insert id="addOperation" parameterType="pojo.Operation">
+        insert into USER_OPERATION (title,operName,type,parentName,orderNum,flagName,status) values (#{title}, #{operName,jdbcType=VARCHAR}, #{type},#{parentName}, #{orderNum}, #{flagName,jdbcType=VARCHAR}, #{status})
+    </insert>
+    
+    <delete id="delOperation" parameterType="java.lang.Integer">
+        delete from USER_OPERATION where id = #{id}
+    </delete>
+    
+    <delete id="delRoleOperation" parameterType="java.lang.Integer">
+        delete from ROLE_OPER where roleId = #{roleId}
+    </delete>
+    
+    <delete id="delRoleOperationByOperId" parameterType="java.lang.Integer">
+        delete from ROLE_OPER where operId = #{id}
+    </delete>
+    
+    <insert id="addRoleOperation">
+		insert into ROLE_OPER (roleId,operId) values (#{roleId}, #{operId})
+    </insert>
+    
+    <select id="getAllDirs" resultType="pojo.Operation">
+    	select * from USER_OPERATION where type in(3,4,5)
+    </select>
+    
+    <select id="getParentName" resultType="String">
+    	select title from USER_OPERATION where id = #{id}
+    </select>
+    
+    <update id="updateOperation" parameterType="pojo.Operation">
+    	update USER_OPERATION set 
+	       		title = #{op.title},
+	       		operName = #{op.operName},
+	       		flagName = #{op.flagName} 
+	       	where id = #{op.id}
+    </update>
+  
+</mapper>  

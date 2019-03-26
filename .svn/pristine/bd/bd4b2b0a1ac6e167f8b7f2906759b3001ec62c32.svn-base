@@ -1,0 +1,307 @@
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form"%>
+<%@ taglib uri="http://www.springframework.org/tags" prefix="spring"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+	
+<%
+	String base = request.getContextPath();
+	request.setAttribute("base", base);
+	/* String basePath = request.getScheme() + "://"
+	+ request.getServerName() + ":" + request.getServerPort()
+	+ base + "/"; */
+%>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<link rel="stylesheet" type="text/css"	href="${base}/js/easyUI/themes/default/easyui.css" />
+	<link rel="stylesheet" type="text/css"	href="${base}/js/easyUI/themes/icon.css">
+	<link rel="stylesheet" type="text/css"	href="${base}/js/easyUI/themes/demo.css">
+	<link rel="stylesheet" type="text/css"	href="${base}/css/uploadfile.css">
+	<link rel="stylesheet" type="text/css"	href="${base}/css/default.css">
+	
+	<%-- <script type="text/javascript" src="${base}/js/jquery-3.2.1.min.js"></script> --%>
+	<script type="text/javascript" src="${base}/js/jquery-1.9.1.min.js"></script>
+	<%-- <script type="text/javascript"	src="${base}/js/easyUI/jquery-1.4.4.min.js"></script> --%>
+	<script type="text/javascript"	src="${base}/js/easyUI/jquery.easyui.min.js"></script>
+	<script type="text/javascript"	src="${base}/js/jquery.uploadfile.min.js"></script>
+	
+	<script type="text/javascript">
+		$(function(){
+			$('#st2').switchbutton({
+			      checked: false,
+			      onChange: function(checked){
+			    	  if (checked) {
+							$('#panel').panel('close');
+							$('#typePanel').panel('open');
+						} else {
+							$('#panel').panel('open');
+							$('#typePanel').panel('close');
+						}
+			      }
+			    });
+
+			 // 回车键事件 
+			 // 绑定键盘按下事件  
+			 $("input").keydown(function(e) {  
+			     // 回车键事件  
+			        if(e.which == 13) {  
+			        	doSearch();
+			        }  
+			 }); 
+			 /* $("#dscp").keydown(function(e) {  
+			     // 回车键事件  
+			        if(e.which == 13) {  
+			        	doSearch();
+			        }  
+			 }); */
+			 
+			$('#dg').datagrid({
+				onDblClickRow: function(index,row){
+			        $('#sapList').html(row.code);
+			        $('#commands').val(row.code);
+			        $('#commandBatch2').submit();
+				}
+			});
+			
+			$('#tt').tree({
+				onClick: function(node){
+					var path = node.text;
+					if (path != '根目录'){
+						var nodep = $('#tt').tree('getParent', node.target);
+						if (nodep.text != '根目录'){
+							path = nodep.text + '/' + path;
+							var nodepp = $('#tt').tree('getParent', nodep.target);
+							if (nodepp.text != '根目录'){
+								path = nodepp.text + '/' + path;
+							}
+						}
+					}
+					path = '/' + path.substring(0,path.indexOf('('))+path.substring(path.lastIndexOf(')')+1);
+					//alert(path);
+					$.ajax({  
+				        url:"<%=base%>/file/listFile",
+				        type:"POST",
+				        data: {currentDir:path,sapCode:path.substring(1,9)},
+				        success:function(data){
+				    		//$.messager.alert('通知','提交成功!');
+				    		$('#content').html(data);
+				        },
+				        error: function(XMLHttpRequest, textStatus, errorThrown) {
+	                        alert(XMLHttpRequest.status);
+	                        alert(XMLHttpRequest.readyState);
+	                        alert(textStatus);
+	                    }
+			        });
+				}
+			});
+		});
+		
+		function openDialog() {
+			// sap列表
+			 $('#dg').datagrid({
+			        title: "列表",  
+			        url: "<%=base%>/materiel/materielList",
+			        pageList : [ 100, 80, 50 ],//可以选择的分页集合  
+		            nowrap : true,//设置为true，当数据长度超出列宽时将会自动截取  
+		            striped : true,//设置为true将交替显示行背景。  
+		            collapsible : true,//显示可折叠按钮  
+			        columns: [  
+			            [  
+			                {field: 'code', title: '物料编码', width: 10, align: "center"},
+			                {field: 'type', title: '类型', width: 10, align: "center"},
+			                {field: 'dscp', title: '描述', width: 50, align: "center"},
+			                {field: 'grp', title: '物料组', width: 10, align: "center"},
+			                {field: 'grpdesc', title: '物料组描述', width: 20, align: "center"},
+			                {field: 'mark', title: 'X为停用', width: 5, align: "center"},
+			                {field: 'isUserCreated', title: '1为自建', width: 5, align: "center"}
+			            ]  
+			        ],
+			        loadMsg : '数据装载中......',  
+		            singleSelect:false,//为true时只能选择单行  
+		            fitColumns:true,//允许表格自动缩放，以适应父容器  
+		            remoteSort : false,  
+		             frozenColumns : [ [ {  
+		                field : 'ck',  
+		                checkbox : true  //多选框
+		            } ] ],   
+		            pagination : true,//分页  
+		            rownumbers : true//行数  
+			    });  
+			  
+			 	/* debugger */
+			    //设置分页控件  
+			    var p = $('#dg').datagrid('getPager');
+			    p.pagination({
+			        pageList: [100, 80, 50],//可以设置每页记录条数的列表  
+			        beforePageText: '第',//页数文本框前显示的汉字  
+			        afterPageText: '页    共 {pages} 页',  
+			        displayMsg: '当前显示 {from} - {to} 条记录   共 {total} 条记录'  
+			    });  
+			    
+			    // 打开sap选择窗口
+			    $("#selCodeDiv").dialog("open");
+		 };
+
+
+			// sap查询
+			function doSearch() {
+				$('#dg').datagrid('load',{
+					code: $('#code').val(),
+					dscp: $('#dscp').val()
+				});
+			}
+			// 打包下载
+			function batchDownload(){
+			   
+			    $("#str").val(str);
+			    $("#batForm").submit();
+			    
+			}
+			// 获取选中的id合集,打包下载
+			function getChecked(){
+				// 全选中，判断是类别打包还是自由打包
+				// var x = (document.getElementById('st').value == '关闭批量选一类');
+				var x = ($('#st2').switchbutton('options').checked);
+				var nodes;
+				if(x) {
+					nodes = $('#typett').tree('getChecked');
+				} else {
+					nodes = $('#tt').tree('getChecked');
+				}
+				if (nodes.length==0) {
+			        $.messager.alert("警告", "请选择目录！", "info");
+			        return;  
+		        }
+				
+				// 分割编码，转成目录
+				var cmds = $('#commands').val().split(" ");
+				//alert(cmds);
+				
+				var str = '';
+				for(var i=0; i<nodes.length; i++){
+					var path = nodes[i].text;
+					//alert(path);
+					if (path != '根目录'){
+						if(x) {
+							var nodep = $('#typett').tree('getParent', nodes[i].target);
+							if (nodep.text != '根目录'){
+								path = nodep.text + '/' + path;
+								var nodepp = $('#typett').tree('getParent', nodep.target);
+								if (nodepp.text != '根目录'){
+									path = nodepp.text + '/' + path;
+								}
+							}
+							// 由类型转成相应的目录
+							for (var j=0;j<cmds.length;j++){
+								if (cmds[j].startsWith(path.substring(3,4))) {
+									str += '/'+cmds[j]+path.substring(8) + ',';
+									//alert(str)
+								}
+							}
+						} else {
+							var nodep = $('#tt').tree('getParent', nodes[i].target);
+							if (nodep.text != '根目录'){
+								path = nodep.text + '/' + path;
+								var nodepp = $('#tt').tree('getParent', nodep.target);
+								if (nodepp.text != '根目录'){
+									path = nodepp.text + '/' + path;
+								}
+							}
+							path = path.substring(0,path.indexOf('('))+path.substring(path.lastIndexOf(')')+1);
+							str += '/'+path + ',';
+						}
+					}
+				}
+				str=str.substring(0,str.length-1);
+				//alert('str:'+str);
+				$.messager.confirm('提示', '确定如此打包吗?', function (r) {  
+		            if (!r) {  
+		                return;  
+		            }  
+					$("#str").val(str);
+				    $("#batForm").submit();
+				});
+			};
+			
+			function selectType(){
+				if (document.getElementById('st').value == '开启批量选一类') {
+					$('#panel').panel('close');
+					$('#typePanel').panel('open');
+					document.getElementById('st').value='关闭批量选一类';
+				} else {
+					$('#panel').panel('open');
+					$('#typePanel').panel('close');
+					document.getElementById('st').value='开启批量选一类';
+				}
+			};
+			
+			function confirm() {
+				//返回选中多行  
+			    var selRow = $('#dg').datagrid('getSelections');
+			    //判断是否选中行  
+			    if (selRow.length==0) {  
+			        $.messager.alert("提示", "请选择要查询的物料！", "info");  
+			        return;  
+			    }else{      
+			        var temID="";  
+			        //批量获取选中行的评估模板ID  
+			        for (i = 0; i < selRow.length;i++) {  
+			            if (temID =="") {  
+			                temID = selRow[i].code;  
+			            } else {  
+			                temID = selRow[i].code + " " + temID;  
+			            }                 
+			        }  
+			        $('#sapList').html(temID);
+			        $('#commands').val(temID);
+			        $('#commandBatch2').submit();
+			    }  
+			}
+	</script>
+</head>
+<body>
+	<div id="selCodeDiv" class="easyui-dialog" modal="true" closed="true" style="padding:5px;width:1200px;height:520px;" title="sap数据集合"
+				toolbar="#dlg-toolbar" >
+					<div id="tb" style="padding: 2px">
+						搜索:<span>&nbsp;&nbsp;物料号:</span> <input id="code" style="line-height: 26px; border: 1px solid #ccc"> 
+						<span>物料描述:</span> <input id="dscp"	style="line-height: 26px; border: 1px solid #ccc"> 
+						<!-- <a href="#" class="easyui-linkbutton" plain="true" onclick="doSearch()">查询</a> -->
+					</div>
+				<table id="dg" title="sap数据集合" style="width: 100%; height: 80%" iconCls="icon-search"></table>
+				<br />
+				<div style="text-align: center;">
+					<button style="font-size: large;color: red;font-weight: bold;" onclick="confirm()">请求选中的目录</button>
+				</div>
+	</div>
+	<div class="easyui-layout" style="width:1700px;height:840px;">
+		<div region="west" split="true" title="Navigator" style="width:400px;">
+			<button style="margin: 3px;" onclick="openDialog()" class="easyui-linkbutton" iconCls="icon-search">选择物料</button><span id="sp"></span>
+			<form id="commandBatch2" action="<%=base%>/file/commandBatch2" method="post">
+					<span>&nbsp;搜索:</span><input style="width: 250px;" id="commands" name="commands" value="${commands}"/>
+					<input type="submit" value="确定"  />
+				 </form>
+			<span>&nbsp;目录共</span><span style="color: red;">${commandSize}</span><span>个:</span><span id="sapList">${commands}</span><br />
+			<button style="margin: 3px;" onclick="getChecked()" class="easyui-linkbutton" iconCls="icon-download">打包下载</button>
+			<!-- <input id="st" type="button" style="padding: 3px;margin: 3px;" onclick="selectType()" class="easyui-linkbutton" value="开启批量选一类" /> -->
+			<!-- <br /> -->
+			
+			<span style="margin-left: 90px">选择类别打包:&nbsp;</span><input id="st2" onclick="selectType2()" > 
+			
+			<form id="batForm" action="<%=base%>/file/batchDownload" method="post">
+				<input type="hidden" id="str" name="str" />
+			</form>
+			<div id="panel" class="easyui-panel" style="padding:5px">
+				<ul id="tt" class="easyui-tree" data-options="url:'${base}/file/getDir?commands=${commands}',method:'post',animate:true,checkbox:true"></ul>
+			</div>
+			<div id="typePanel" class="easyui-panel" style="padding:5px" closed="true">
+				在上面的<span style="color: red;">${commandSize}</span>个目录中选择类别打包:
+				<ul id="typett" class="easyui-tree" data-options="url:'${base}/user/getDirs?types=${types}',method:'post',animate:true,checkbox:true"></ul>
+			</div>
+		</div>
+		<div id="content" region="center" title="内容" style="padding:5px;">
+		</div>
+	</div>
+</body>
+</html>

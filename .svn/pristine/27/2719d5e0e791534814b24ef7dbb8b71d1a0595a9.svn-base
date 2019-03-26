@@ -1,0 +1,578 @@
+package controller.user;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.encoding.Md5PasswordEncoder;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import common.pagehelper.PageHelper;
+import common.util.StringUtils;
+import net.sf.json.JSONArray;
+import pojo.Operation;
+import pojo.Role;
+import pojo.User;
+import service.user.IRoleService;
+import service.user.IUserService;
+import vo.PageInfo;
+import vo.Tree;
+import vo.UserVo;
+
+@Controller
+@RequestMapping({ "/user" })
+public class UserTableController {
+	protected static Logger logger = Logger.getLogger(UserTableController.class);
+
+	// @Autowired
+	// private IUserDao userDao;
+
+	@Autowired
+	private IUserService userService;
+
+	@Autowired
+	private IRoleService roleService;
+
+	// 启用状态
+	private static final int normalStatus = 1;
+
+	// 一级菜单
+	private static final int firOperType = 1;
+	// 二级菜单
+	private static final int secOperType = 2;
+	// 三级菜单
+	private static final int thrOperType = 3;
+	// 四级菜单
+	private static final int forOperType = 4;
+	// 五级菜单
+	private static final int fifOperType = 5;
+	// listFile默认在数据库中的菜单id
+	private static final int listFileNum = 12;
+
+	@RequestMapping(value = { "/index" }, method = { RequestMethod.GET })
+	public String saveUser() {
+		try {
+
+			logger.debug("首页");
+			return "/user/user";
+		} catch (Exception e) {
+		}
+		return "fail";
+	}
+
+	@RequestMapping(value = { "/userList" })
+	@ResponseBody
+	public Map<String, Object> getUserList(HttpServletRequest request, HttpServletResponse response,
+			@RequestParam(required = false, defaultValue = "1") Integer page, // 第几页
+			@RequestParam(required = false, defaultValue = "5") Integer rows // 页数大小
+	) {
+
+		PageHelper.startPage(page, rows);
+		String userName = null;
+		if (StringUtils.isNotEmpty(request.getParameter("userName"))) {
+			userName = request.getParameter("userName");
+		}
+
+		List<User> userList2 = userService.getUsers(null, userName, 1);
+		PageInfo<User> p = new PageInfo<User>(userList2);
+
+		Map<String, Object> m = new HashMap<String, Object>();
+
+		m.put("total", p.getTotal());
+		m.put("rows", p.getRows());
+
+		return m;
+	}
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 * 
+	 * 		获得用户角色
+	 * 
+	 */
+	@RequestMapping(value = { "/role" })
+	public String getRole(HttpServletRequest request, HttpServletResponse response) {
+
+		// 得到当前用户 的角色
+		// 获取session 用户
+		UserVo user = (UserVo) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+		if (user != null) {
+
+			Role role = userService.getRole(user.getId());
+			List<Role> roleList = userService.getRoles(null, normalStatus);
+
+			request.setAttribute("role", role);
+			request.setAttribute("roleList", roleList);
+		}
+
+		return "/user/user_role";
+	}
+
+	@ResponseBody
+	@RequestMapping(value = { "/saveRole" })
+	public String saveRole(HttpServletRequest request, HttpServletResponse response, Integer roleId) {
+
+		try {
+			// 得到当前用户 的角色
+			// 获取session 用户
+			UserVo user = (UserVo) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+			userService.saveUserRole(user.getId(), roleId);
+
+			return "1";
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "0";
+		}
+
+	}
+
+	/**
+	 * 查询权限
+	 * 
+	 * @param request
+	 * @param response
+	 */
+	@ResponseBody
+	@RequestMapping(value = { "/getOpertion" })
+	public void getOpertion(HttpServletRequest request, HttpServletResponse response) {
+
+		String roleid = request.getParameter("roleid");
+		Integer actulRoleId = null;
+		if (!StringUtils.isEmpty(roleid)) {
+			actulRoleId = Integer.parseInt(roleid);
+		}
+
+		List<Tree> treeList = new ArrayList<Tree>();
+
+		Tree all = new Tree();
+		all = new Tree();
+		all.setId(0);
+		all.setState("状态");
+		all.setText("全部");
+		// all.setChecked(true);
+
+		// 获取所有5层权限
+		List<Operation> allOperations = roleService.getAllOperations();
+		List<Operation> allFirOperations = new ArrayList<Operation>();
+		List<Operation> allSecOperations = new ArrayList<Operation>();
+		List<Operation> allThrOperations = new ArrayList<Operation>();
+		List<Operation> allForOperations = new ArrayList<Operation>();
+		List<Operation> allFifOperations = new ArrayList<Operation>();
+		buildOper(allOperations, allFirOperations, allSecOperations, allThrOperations, allForOperations,
+				allFifOperations);
+
+		List<Role> roleList = userService.getRoles(actulRoleId, normalStatus);
+		for (int i = 0; i < roleList.size(); i++) {
+			Tree father = new Tree();
+			father.setId(i);
+			father.setState(i + "状态");
+			father.setText(roleList.get(i).getRoleName());
+			// father.setChecked(true);
+			List<Tree> chilTreeList = new ArrayList<Tree>();
+
+			// 获取角色拥有的4层权限
+			List<Operation> secOperations = roleService.getOperations(roleList.get(i).getId(), secOperType);
+			List<Operation> thrOperations = roleService.getOperations(roleList.get(i).getId(), thrOperType);
+			List<Operation> forOperations = roleService.getOperations(roleList.get(i).getId(), forOperType);
+			List<Operation> fifOperations = roleService.getOperations(roleList.get(i).getId(), fifOperType);
+			List<Integer> secIds = new ArrayList<Integer>();
+			for (Operation op : secOperations) {
+				secIds.add(op.getId());
+			}
+			List<Integer> thrIds = new ArrayList<Integer>();
+			for (Operation op : thrOperations) {
+				thrIds.add(op.getId());
+			}
+			List<Integer> forIds = new ArrayList<Integer>();
+			for (Operation op : forOperations) {
+				forIds.add(op.getId());
+			}
+			List<Integer> fifIds = new ArrayList<Integer>();
+			for (Operation op : fifOperations) {
+				fifIds.add(op.getId());
+			}
+
+			for (int j = 0; j < allFirOperations.size(); j++) {
+
+				Tree firChild = new Tree();
+				firChild.setId(allFirOperations.get(j).getId());
+				firChild.setState(j + "子状态");
+				firChild.setText(allFirOperations.get(j).getTitle());
+
+				List<Tree> secChilTreeList = new ArrayList<Tree>();
+				for (int k = 0; k < allSecOperations.size(); k++) {
+					if ((allSecOperations.get(k)).getParentName() == allFirOperations.get(j).getId()) {
+
+						Tree secChild = new Tree();
+						secChild.setId(allSecOperations.get(k).getId());
+						secChild.setState(k + "子状态");
+						secChild.setText(allSecOperations.get(k).getTitle());
+
+						List<Tree> thrChilTreeList = new ArrayList<Tree>();
+						List<Integer> thrParIds = new ArrayList<Integer>();
+						for (int l = 0; l < allThrOperations.size(); l++) {
+							if ((allThrOperations.get(l)).getParentName() == allSecOperations.get(k).getId()) {
+
+								Tree thrChild = new Tree();
+								thrChild.setId(allThrOperations.get(l).getId());
+								thrChild.setState(l + "子状态");
+								thrChild.setText(allThrOperations.get(l).getTitle());
+
+								List<Tree> forChilTreeList = new ArrayList<Tree>();
+								List<Integer> forParIds = new ArrayList<Integer>();
+								for (int m = 0; m < allForOperations.size(); m++) {
+									if ((allForOperations.get(m)).getParentName() == allThrOperations.get(l).getId()) {
+
+										Tree forChild = new Tree();
+										forChild.setId(allForOperations.get(m).getId());
+										forChild.setState(m + "子状态");
+										forChild.setText(allForOperations.get(m).getTitle());
+
+										List<Tree> fifChilTreeList = new ArrayList<Tree>();
+										List<Integer> fifParIds = new ArrayList<Integer>();
+										for (int n = 0; n < allFifOperations.size(); n++) {
+											if ((allFifOperations.get(n)).getParentName() == allForOperations.get(m)
+													.getId()) {
+
+												Tree fifChild = new Tree();
+												fifChild.setId(allFifOperations.get(n).getId());
+												fifChild.setState(n + "子状态");
+												fifChild.setText(allFifOperations.get(n).getTitle());
+
+												if (fifIds.contains(allFifOperations.get(n).getId())) {
+													fifChild.setChecked(true);
+												}
+
+												fifChilTreeList.add(fifChild);
+											}
+											fifParIds.add(allFifOperations.get(n).getParentName());
+										}
+										if (!fifParIds.contains(allForOperations.get(m).getId())) {
+											if (forIds.contains(allForOperations.get(m).getId())) {
+												forChild.setChecked(true);
+											}
+										}
+										forChild.setChildren(fifChilTreeList);
+										forChilTreeList.add(forChild);
+									}
+									forParIds.add(allForOperations.get(m).getParentName());
+								}
+								if (!forParIds.contains(allThrOperations.get(l).getId())) {
+									if (thrIds.contains(allThrOperations.get(l).getId())) {
+										thrChild.setChecked(true);
+									}
+								}
+								thrChild.setChildren(forChilTreeList);
+								thrChilTreeList.add(thrChild);
+							}
+							thrParIds.add(allThrOperations.get(l).getParentName());
+						}
+						if (!thrParIds.contains(allSecOperations.get(k).getId())) {
+							if (secIds.contains(allSecOperations.get(k).getId())) {
+								secChild.setChecked(true);
+							}
+						}
+						secChild.setChildren(thrChilTreeList);
+						secChilTreeList.add(secChild);
+					}
+				}
+
+				firChild.setChildren(secChilTreeList);
+
+				chilTreeList.add(firChild);
+			}
+
+			father.setChildren(chilTreeList);
+
+			treeList.add(father);
+		}
+		all.setChildren(treeList);
+
+		String jsonStr = "" + JSONArray.fromObject(all).toString() + "";
+		System.out.println(jsonStr);
+
+		try {
+			response.setContentType("text/json;charset=UTF-8");
+			response.getWriter().write(jsonStr);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	/**
+	 * 目录管理
+	 * 
+	 * @param request
+	 * @param response
+	 */
+	@ResponseBody
+	@RequestMapping(value = { "/getDirs" })
+	public void getDirs(HttpServletRequest request, HttpServletResponse response) {
+
+		// 得到当前用户 的角色
+		// 获取session 用户
+		UserVo user = (UserVo) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		int roleId = 0;
+		if (user != null) {
+			Role role = userService.getRole(user.getId());
+			roleId = role.getId();
+		}
+
+		String types = request.getParameter("types");
+		List<Tree> treeList = new ArrayList<Tree>();
+
+		Tree all = new Tree();
+		all = new Tree();
+		all.setId(0);
+		all.setState("状态");
+		all.setText("根目录");
+
+		List<Operation> allThrOperations = null;
+		List<Operation> allForOperations = null;
+		List<Operation> allFifOperations = null;
+
+		List<Operation> finalAllThrOperations = new ArrayList<Operation>();
+
+		// 管理目录功能
+		if (StringUtils.isEmpty(types)) {
+			// 获取第3,4,5层权限
+			List<Operation> allOperations = roleService.getAllOperations();
+			List<Operation> allFirOperations = new ArrayList<Operation>();
+			List<Operation> allSecOperations = new ArrayList<Operation>();
+			allThrOperations = new ArrayList<Operation>();
+			allForOperations = new ArrayList<Operation>();
+			allFifOperations = new ArrayList<Operation>();
+			buildOper(allOperations, allFirOperations, allSecOperations, allThrOperations, allForOperations,
+					allFifOperations);
+			finalAllThrOperations.addAll(allThrOperations);
+		} else {// 打包筛选类别功能
+			allThrOperations = roleService.getOperations(roleId, thrOperType);
+			allForOperations = roleService.getOperations(roleId, forOperType);
+			allFifOperations = roleService.getOperations(roleId, fifOperType);
+
+			List<String> lTypes = Arrays.asList(types.split(","));
+			for (Operation op : allThrOperations) {
+				if (lTypes.contains(op.getTitle())) {
+					finalAllThrOperations.add(op);
+				}
+			}
+		}
+		for (int i = 0; i < finalAllThrOperations.size(); i++) {
+			if (finalAllThrOperations.get(i).getParentName() == listFileNum) {
+				Tree father = new Tree();
+				father.setId(finalAllThrOperations.get(i).getId());
+				father.setState(i + "状态");
+				father.setText(finalAllThrOperations.get(i).getTitle() + "("
+						+ finalAllThrOperations.get(i).getOperName() + ")");
+
+				List<Tree> chilTreeList = new ArrayList<Tree>();
+				for (int j = 0; j < allForOperations.size(); j++) {
+					if ((allForOperations.get(j)).getParentName() == finalAllThrOperations.get(i).getId()) {
+						Tree firChild = new Tree();
+						firChild.setId(allForOperations.get(j).getId());
+						firChild.setState(j + "子状态");
+						firChild.setText(allForOperations.get(j).getTitle());
+
+						List<Tree> secChilTreeList = new ArrayList<Tree>();
+						for (int k = 0; k < allFifOperations.size(); k++) {
+							if ((allFifOperations.get(k)).getParentName() == allForOperations.get(j).getId()) {
+
+								Tree secChild = new Tree();
+								secChild.setId(allFifOperations.get(k).getId());
+								secChild.setState("3");
+								secChild.setText(allFifOperations.get(k).getTitle());
+								secChilTreeList.add(secChild);
+							}
+						}
+						firChild.setChildren(secChilTreeList);
+						chilTreeList.add(firChild);
+					}
+				}
+				father.setChildren(chilTreeList);
+				treeList.add(father);
+			}
+		}
+		all.setChildren(treeList);
+
+		String jsonStr = "" + JSONArray.fromObject(all).toString() + "";
+		System.out.println(jsonStr);
+
+		try {
+			response.setContentType("text/json;charset=UTF-8");
+			response.getWriter().write(jsonStr);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 批量刪除用戶
+	 * 
+	 * @param request
+	 * @param response
+	 */
+	@RequestMapping(value = { "/delUser" })
+	@ResponseBody
+	public void delUser(HttpServletRequest request, HttpServletResponse response, @RequestParam("idStr") String idStr) {
+
+		String[] idList = idStr.split(",");
+		for (String id : idList) {
+			userService.delUser(Integer.parseInt(id));
+		}
+	}
+
+	/**
+	 * 呼出选择角色对话框
+	 * 
+	 * @param request
+	 * @param response
+	 */
+	@RequestMapping(value = { "/editRole" })
+	public String editRole(HttpServletRequest request, HttpServletResponse response,
+			@RequestParam("userid") String userid) {
+
+		// 得到当前用户 的角色
+		// 获取session 用户
+		// UserVo user = (UserVo)
+		// SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+		List<Role> roleList = userService.getRoles(null, normalStatus);
+		Role role = userService.getRole(Integer.parseInt(userid));
+
+		request.setAttribute("role", role);
+		request.setAttribute("userid", userid);
+		request.setAttribute("roleList", roleList);
+
+		return "/user/user_role";
+	}
+
+	/**
+	 * 修改用户的角色
+	 * 
+	 * @param request
+	 * @param response
+	 */
+	@RequestMapping(value = { "/updateRole" })
+	public void updateRole(HttpServletRequest request, HttpServletResponse response, Integer roleId,
+			@RequestParam("userid") String userid) {
+
+		try {
+			// Integer userid =
+			// Integer.parseInt((String)request.getAttribute("userid"));
+			userService.updateRole(Integer.parseInt(userid), roleId);
+
+			// return "1";
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			// return "0";
+		}
+
+	}
+
+	/**
+	 * 添加用戶
+	 * 
+	 * @param request
+	 * @param response
+	 */
+	@RequestMapping(value = { "/addUser" })
+	public void addUser(HttpServletRequest request, HttpServletResponse response) {
+		// int userId = userService.getUserSq();
+
+		User user = new User();
+		// user.setId(userId);
+		user.setUserName(request.getParameter("userName"));
+		user.setUserPwd(new Md5PasswordEncoder().encodePassword(request.getParameter("password"), null));
+		user.setRealName(request.getParameter("realName"));
+		user.setStatus(Integer.parseInt((request.getParameter("status"))));
+		user.setEmail(request.getParameter("email"));
+		user.setTelphone(request.getParameter("telephone"));
+		user.setQq(request.getParameter("QQ"));
+		userService.saveUser(user);
+
+		userService.saveUserRole(userService.getUserByName(request.getParameter("userName")).getId(),
+				Integer.parseInt(request.getParameter("role")));
+	}
+
+	/**
+	 * 修改密码
+	 * 
+	 * @param request
+	 * @param response
+	 */
+	@RequestMapping(value = { "/modifyPwd" })
+	public void modifyPwd(HttpServletRequest request, HttpServletResponse response,
+			@RequestParam("newpass") String newpass) {
+
+		UserVo user = (UserVo) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		userService.modifyPwd(user.getId(), new Md5PasswordEncoder().encodePassword(newpass, null));
+	}
+
+	/**
+	 * 获取角色选项
+	 * 
+	 * @param request
+	 * @param response
+	 */
+	@RequestMapping(value = { "/getRoleOptions" })
+	public void getRoleOptions(HttpServletResponse response) {
+		response.setContentType("text/html; charset=utf-8");
+		PrintWriter pw = null;
+		List<Role> roleList = userService.getRoles(null, normalStatus);
+		try {
+			pw = response.getWriter();
+			for (Role r : roleList) {
+				pw.println("\"<option value='" + r.getId() + "'>" + r.getRoleName() + "</option>\"");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (null != pw) {
+				pw.close();
+			}
+		}
+	}
+
+	// 组装各层目录
+	private void buildOper(List<Operation> operations, List<Operation> firOperations, List<Operation> secOperations,
+			List<Operation> thrOperations, List<Operation> forOperations, List<Operation> fifOperations) {
+		for (Operation op : operations) {
+			if (op.getType() == firOperType) {
+				firOperations.add(op);
+			} else if (op.getType() == secOperType) {
+				secOperations.add(op);
+			} else if (op.getType() == thrOperType) {
+				thrOperations.add(op);
+			} else if (op.getType() == forOperType) {
+				forOperations.add(op);
+			} else {
+				fifOperations.add(op);
+			}
+		}
+	}
+
+}

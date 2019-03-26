@@ -1,0 +1,6 @@
+eclipse.preferences.version=1
+encoding//WebContent/WEB-INF/jdbc.properties=UTF-8
+encoding//src/common/util=UTF-8
+encoding//src/controller/LoginLogoutController.java=UTF-8
+encoding//src/service/CustomUserDetailsService.java=UTF-8
+encoding/<project>=UTF-8

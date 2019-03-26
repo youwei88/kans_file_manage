@@ -1,0 +1,145 @@
+package service.file.impl;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import dao.IFileDao;
+import dao.IMaterielDao;
+import pojo.FileInfo;
+import pojo.Operation;
+import service.file.IFileService;
+
+@Service
+public class FileServiceImpl implements IFileService {
+
+	protected static Logger logger = Logger.getLogger(IFileService.class);
+
+	@Autowired
+	IFileDao iFileDao;
+
+	@Autowired
+	IMaterielDao materielDao;
+
+	private static final String[] materiels = { "Z001", "Z004", "Z005", "Z006" };
+
+	Properties p = new Properties();
+
+	@Override
+	public void saveFileInfo(FileInfo file) {
+		iFileDao.saveFileInfo(file);
+	}
+
+	@Override
+	public FileInfo getFileInfo(String fileName, String path) {
+		return iFileDao.getFileInfo(fileName, path);
+	}
+	
+	@Override
+	public FileInfo getFileInfoById(String requestId, String oaId,String type) {
+		return iFileDao.getFileInfoById(requestId, oaId, type);
+	}
+
+	@Override
+	public void addDir(Operation op) {
+		iFileDao.addDir(op);
+	}
+
+	@Override
+	public void delFileInfo(int id) {
+		iFileDao.delFileInfo(id);
+	}
+
+	@Override
+	public void updateFileInfo(FileInfo file) {
+		iFileDao.updateFileInfo(file);
+	}
+	
+	
+
+	@Override
+	public void applyDir(String path) {
+
+		// 4种材料目录急
+		Map<String, List<String>> mtrDirs = new HashMap<String, List<String>>();
+
+		// 组装目录
+		getDirs(mtrDirs);
+
+		for (String name : new File(path).list()) {
+			List<String> dirs = mtrDirs.get("Z00" + name.substring(0, 1));
+			if (null != dirs) {
+				for (String s : dirs) {
+					new File(path + "/" + name + "/" + s).mkdirs();
+				}
+			}
+		}
+	}
+
+	// 获取每种类型对应的目录结构
+	private void getDirs(Map<String, List<String>> dirs) {
+		for (String s : materiels) {
+			List<String> ss = new ArrayList<String>();
+			// 找到一级目录的权限id
+			List<Operation> secDirs = materielDao.findSonDir(0, s);
+
+			for (Operation op : secDirs) { // 二级目录
+				logger.debug("secDirs:" + secDirs + ",optitle:" + op.getTitle());
+				ss.add("/" + op.getTitle());
+
+				List<Operation> thrDirs = materielDao.findSonDir(op.getId(), null);
+				for (Operation op2 : thrDirs) { // 三级目录
+					ss.add("/" + op.getTitle() + "/" + op2.getTitle());
+				}
+			}
+			dirs.put(s, ss);
+		}
+	}
+
+	@Override
+	public void delFileMark(int id) {
+		iFileDao.delFileMark(id);
+	}
+
+	@Override
+	public int getOperNext() {
+		return iFileDao.getOperNext();
+	}
+
+	@Override
+	public Integer getIdByOperName(String operName) {
+		return iFileDao.getIdByOperName(operName);
+	}
+
+	@Override
+	public void deleteRecord(List<String> fileIds) {
+		iFileDao.deleteRecord(fileIds);
+	}
+
+	@Override
+	public void deleteFileInfo(FileInfo file) {
+		iFileDao.deleteFileInfo(file);
+	}
+
+	@Override
+	public FileInfo getFileById(Integer id) {
+		return iFileDao.getFileById(id);
+	}
+
+	@Override
+	public List<Operation> getOption() {
+		return iFileDao.getOption();
+	}
+
+	@Override
+	public Operation getInfoBycode(String code) {
+		return iFileDao.getInfoBycode(code);
+	}
+}

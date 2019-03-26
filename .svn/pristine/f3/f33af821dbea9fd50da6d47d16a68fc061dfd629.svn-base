@@ -1,0 +1,80 @@
+﻿<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form"%>
+<%@ taglib uri="http://www.springframework.org/tags" prefix="spring"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+	
+<%
+	String base = request.getContextPath();
+	request.setAttribute("base", base);
+	/* String basePath = request.getScheme() + "://"
+	+ request.getServerName() + ":" + request.getServerPort()
+	+ base + "/"; */
+%>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<link rel="stylesheet" type="text/css"	href="${base}/js/easyUI/themes/default/easyui.css" />
+	<link rel="stylesheet" type="text/css"	href="${base}/js/easyUI/themes/icon.css">
+	<link rel="stylesheet" type="text/css"	href="${base}/js/easyUI/themes/demo.css">
+	<link rel="stylesheet" type="text/css"	href="${base}/css/uploadfile.css">
+	<link rel="stylesheet" type="text/css"	href="${base}/css/default.css">
+	
+	<script type="text/javascript" src="${base}/js/jquery-1.9.1.min.js"></script>
+	<script type="text/javascript"	src="${base}/js/easyUI/jquery.easyui.min.js"></script>
+	<script type="text/javascript"	src="${base}/js/jquery.uploadfile.min.js"></script>
+	
+	<script type="text/javascript">
+		$(function(){
+			
+			$('#tt').tree({
+				onClick: function(node){
+					var path = node.text;
+					if (path != '根目录'){
+						var nodep = $('#tt').tree('getParent', node.target);
+						if (nodep.text != '根目录'){
+							var nodepp = $('#tt').tree('getParent', nodep.target);
+							if (nodepp.text != '根目录'){
+								path = nodepp.text.substring(0, nodepp.text.indexOf('(')) + '/' + nodep.text + '/' + path;
+							} else {
+								path = nodep.text.substring(0, nodep.text.indexOf('(')) + '/' + path;
+							}
+						} else {
+							path = path.substring(0, path.indexOf('('));
+						}
+					}
+					path = '/' + path;
+					//alert(path);
+					$.ajax({  
+				        url:"<%=base%>/file/listFile",
+				        type:"POST",
+				        data: {currentDir:path,sapCode:path.substring(1,9)},
+				        success:function(data){
+				    		//$.messager.alert('通知','提交成功!');
+				    		$('#content').html(data);
+				        },
+				        error: function(XMLHttpRequest, textStatus, errorThrown) {
+	                        alert(XMLHttpRequest.status);
+	                        alert(XMLHttpRequest.readyState);
+	                        alert(textStatus);
+	                    }
+			        });
+				}
+			});
+		});
+		
+	</script>
+</head>
+<body>
+	<div class="easyui-layout" style="width:1700px;height:840px;">
+		<div region="west" split="true" title="目录导航" style="width:400px;">
+			<div id="panel" class="easyui-panel" style="padding:5px">
+				<ul id="tt" class="easyui-tree" data-options="url:'${base}/file/getDir?commands=${param.type}',method:'post',animate:true,checkbox:false"></ul>
+			</div>
+		</div>
+		<div id="content" region="center" title="内容" style="padding:5px;">
+		</div>
+	</div>
+</body>
+</html>

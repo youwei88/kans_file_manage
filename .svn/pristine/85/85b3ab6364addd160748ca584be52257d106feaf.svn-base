@@ -1,0 +1,38 @@
+package dao;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
+import pojo.FileInfo;
+import pojo.Operation;
+
+public interface IFileDao {
+	public void saveFileInfo(FileInfo file);
+
+	public FileInfo getFileInfo(@Param("fileName") String fileName, @Param("path") String path);
+
+	public void delFileInfo(int id);
+
+	public void updateFileInfo(FileInfo file);
+
+	public void addDir(@Param("op") Operation op);
+	
+	public void delFileMark(int id);
+	
+	public int getOperNext();
+	
+	public Integer getIdByOperName(String operName);
+
+	public FileInfo getFileInfoById(@Param("requestId")String requestId,@Param("oaId") String oaId, @Param("type") String type);
+
+	public void deleteRecord(@Param("fileIds")List<String> fileIds);
+
+	public void deleteFileInfo(FileInfo file);
+	
+	
+	public FileInfo getFileById(@Param("id") Integer id);
+	
+	public List<FileInfo> getOption();
+	
+}
